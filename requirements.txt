@@ -1,0 +1,14 @@
+numpy
+pandas
+scikit-learn
+lightgbm
+torch
+transformers
+tokenizers
+biopython
+matplotlib
+seaborn
+gradio
+tqdm
+joblib
+pytest

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/raw/
+data/processed/
+embeddings_cache/
+*.npy
+.DS_Store
+.ipynb_checkpoints/
+# NOTE: models/ is intentionally NOT ignored — we commit small versioned models.
