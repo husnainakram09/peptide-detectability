@@ -8,7 +8,7 @@ benchmarks it head-to-head against a 1D-CNN and a small protein-language-model
 (ESM-2) head on a single shared test split, with a never-overwrite model registry
 so no experiment clobbers another.
 
-- **Live demo (Hugging Face Space):** `https://huggingface.co/spaces/<your-username>/peptide-detectability`
+- **Live demo (Hugging Face Space):** `https://huggingface.co/spaces/Husnainakram/peptide-detectability`
   &nbsp;— *replace with your Space URL after deploying (see “Deploy”).*
 - **What this is:** a faithful reproduction + a fair three-way benchmark + an ESM-2
   extension. **What it is not:** novel research, or a claim to “beat” any published model.
