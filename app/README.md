@@ -10,7 +10,7 @@ pinned: false
 license: mit
 ---
 
-# Peptide Detectability Predictor
+<!-- # Peptide Detectability Predictor
 Predicts whether a peptide is likely to be detected ("flyer") in a bottom-up
 mass-spectrometry experiment. Inspired by Saeed Lab (FIU) research on recovering
-overlooked peptides in MS-based omics.
+overlooked peptides in MS-based omics. -->

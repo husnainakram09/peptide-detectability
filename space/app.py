@@ -204,9 +204,9 @@ def build_app() -> gr.Blocks:
         gr.Markdown(
             f"Verdict threshold = {THRESHOLD}. P(detectable) \u2265 {THRESHOLD} \u2192 "
             "*likely detectable*; below \u2192 *likely OVERLOOKED*.\n\n"
-            "Inspired by Saeed Lab (FIU) research on recovering overlooked peptides "
-            "in MS-based omics. (The ESM-2 model, if selected, loads on first use and "
-            "is heavier than the baseline/CNN.)"
+            # "Inspired by Saeed Lab (FIU) research on recovering overlooked peptides "
+            # "in MS-based omics. (The ESM-2 model, if selected, loads on first use and "
+            # "is heavier than the baseline/CNN.)"
         )
     return demo
 
