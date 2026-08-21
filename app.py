@@ -1,13 +1,9 @@
-"""Hugging Face Space entrypoint."""
+"""Hugging Face Space entrypoint for the peptide detectability predictor."""
 
 from app.app import build_app
 
-
 demo = build_app()
 
-
 if __name__ == "__main__":
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=7860,
-    )
+    # Hugging Face Spaces supplies the server environment/port.
+    demo.launch()

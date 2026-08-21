@@ -1,8 +1,12 @@
-gradio
+numpy
+pandas
+scikit-learn==1.9.0
+lightgbm==4.6.0
 torch
 transformers
-numpy
-scikit-learn
-lightgbm
-joblib
+tokenizers
 biopython
+gradio==4.44.0
+gradio_client==1.3.0
+huggingface_hub==0.24.7
+joblib
