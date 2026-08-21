@@ -218,19 +218,6 @@ Sanz) — check it before redistributing any data.
 
 ---
 
-## Inspired by
-
-This project was built after reading about **Prof. Fahad Saeed’s Saeed Lab** at
-**Florida International University (FIU)** and its **MIRA** project on machine-learning
-models for big-data omics and *overlooked* peptides in mass spectrometry.
-Detectability prediction is the **flip side** of that problem: a model of *which*
-peptides current pipelines can and cannot observe. The emphasis here on a rigorous,
-reproducible **benchmark** and **model versioning** — rather than a single headline
-number — is a deliberate nod to that discipline. This is an independent learning
-project and is not affiliated with or endorsed by the lab.
-
----
-
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
