@@ -22,21 +22,6 @@ import tempfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pandas as pd  # noqa: E402
-# Gradio 4.44.x / gradio_client 1.3.0 JSON-schema compatibility fix.
-try:
-    import gradio_client.utils as _gradio_client_utils
-
-    _original_get_type = _gradio_client_utils.get_type
-
-    def _patched_get_type(schema):
-        if isinstance(schema, bool):
-            return "boolean"
-        return _original_get_type(schema)
-
-    _gradio_client_utils.get_type = _patched_get_type
-except Exception:
-    pass
-
 import gradio as gr
 
 from src import predict as predictor  # noqa: E402
