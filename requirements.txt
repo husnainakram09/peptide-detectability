@@ -8,10 +8,8 @@ tokenizers
 biopython
 matplotlib
 seaborn
-
-gradio==4.44.0
+gradio==4.44.1
 huggingface_hub<1.0
-
 tqdm
 joblib
 pytest
