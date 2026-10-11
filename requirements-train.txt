@@ -1,0 +1,13 @@
+# Full local environment: both front ends, data prep, training
+# (baseline / CNN / ESM-2), benchmarking and tests.
+#   pip install -r requirements-train.txt
+-r requirements.txt
+gradio==6.25.0        # keep in sync with sdk_version in README.md
+uvicorn
+torch
+transformers
+tokenizers
+matplotlib
+tqdm
+pytest
+httpx                 # FastAPI TestClient

@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Peptide Detectability Predictor</title>
+<meta name="description" content="Predict whether a tryptic peptide is likely to be detected in bottom-up mass-spectrometry proteomics.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='8' cy='16' r='5' fill='%234f46e5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%237c3aed'/%3E%3Ccircle cx='24' cy='16' r='5' fill='%2306b6d4'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f7f7fb;
+    --surface: #ffffff;
+    --surface-2: #f1f2f8;
+    --border: #e2e4ee;
+    --text: #1b1d2a;
+    --muted: #5d6178;
+    --accent: #4f46e5;
+    --accent-ink: #ffffff;
+    --accent-soft: #eef0ff;
+    --good: #0f8a5f;
+    --good-soft: #e5f6ef;
+    --bad: #b4233c;
+    --bad-soft: #fdecef;
+    --warn: #8a5a00;
+    --warn-soft: #fff4dc;
+    --focus: #4f46e5;
+    --radius: 12px;
+    --shadow: 0 1px 2px rgba(20, 22, 40, .06), 0 4px 16px rgba(20, 22, 40, .05);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1017;
+      --surface: #171923;
+      --surface-2: #1f2230;
+      --border: #2c3042;
+      --text: #e8e9f1;
+      --muted: #a0a4bb;
+      --accent: #8b85ff;
+      --accent-ink: #0f1017;
+      --accent-soft: #24233f;
+      --good: #4cd3a0;
+      --good-soft: #15302a;
+      --bad: #ff8197;
+      --bad-soft: #3a1a22;
+      --warn: #f4c46a;
+      --warn-soft: #362b14;
+      --focus: #8b85ff;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+  header h1 { font-size: 1.75rem; line-height: 1.2; margin: 0 0 8px; letter-spacing: -.01em; }
+  header p { margin: 0; color: var(--muted); max-width: 70ch; }
+  .model {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px;
+    font-size: .85rem; color: var(--muted);
+  }
+  .chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    margin-top: 24px;
+  }
+  .tabs { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab {
+    border: 0; background: transparent; color: var(--muted);
+    font: inherit; font-weight: 500; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); background: var(--surface-2); }
+  .tab[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); }
+  .panel { padding: 20px; }
+  .panel[hidden] { display: none; }
+
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: .875rem; margin: 6px 0 0; }
+  input[type="text"], textarea {
+    width: 100%; font: 15px/1.5 var(--mono); color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; text-transform: uppercase;
+  }
+  textarea { min-height: 180px; resize: vertical; }
+  input::placeholder, textarea::placeholder { text-transform: none; color: var(--muted); opacity: .8; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+  .btn {
+    font: inherit; font-weight: 600; border-radius: 8px; padding: 9px 18px; cursor: pointer;
+    border: 1px solid transparent; background: var(--accent); color: var(--accent-ink);
+  }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  .btn.secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn.secondary:hover { background: var(--surface-2); }
+  .examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .875rem; color: var(--muted); }
+  .examples button {
+    font: 13px var(--mono); border: 1px dashed var(--border); background: transparent;
+    color: var(--text); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+  }
+  .examples button:hover { border-style: solid; }
+
+  .drop {
+    border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 16px;
+    text-align: center; background: var(--surface-2); cursor: pointer;
+  }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop input { display: none; }
+  .drop strong { color: var(--accent); }
+
+  .result { margin-top: 18px; border-radius: 10px; padding: 16px; border: 1px solid var(--border); }
+  .result[hidden] { display: none; }
+  .result.good { background: var(--good-soft); border-color: transparent; }
+  .result.bad { background: var(--bad-soft); border-color: transparent; }
+  .result.warn { background: var(--warn-soft); border-color: transparent; }
+  .result h2 { margin: 0 0 4px; font-size: 1.15rem; }
+  .result.good h2 { color: var(--good); }
+  .result.bad h2 { color: var(--bad); }
+  .result.warn h2 { color: var(--warn); }
+  .result .seq { font-family: var(--mono); word-break: break-all; }
+  .gauge { position: relative; height: 10px; border-radius: 99px; background: var(--surface); margin: 12px 0 4px; overflow: hidden; }
+  .gauge span { position: absolute; inset: 0 auto 0 0; border-radius: 99px; }
+  .gauge i { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--text); opacity: .5; }
+  .scale { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); }
+
+  .error {
+    margin-top: 14px; padding: 10px 12px; border-radius: 8px;
+    background: var(--bad-soft); color: var(--bad);
+  }
+  .error[hidden] { display: none; }
+
+  #results[hidden] { display: none; }
+  #results .head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: center; padding: 16px 20px 0; }
+  #results h2 { font-size: 1.1rem; margin: 0; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 16px 20px 0; }
+  .stat { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+  .stat div { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat small { color: var(--muted); }
+  .stat.good div { color: var(--good); }
+  .stat.bad div { color: var(--bad); }
+  .stat.warn div { color: var(--warn); }
+  #status { padding: 10px 20px 0; margin: 0; color: var(--muted); font-size: .9rem; }
+  .table-wrap { overflow: auto; max-height: 560px; margin-top: 12px; border-top: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  th button {
+    font: inherit; font-weight: 600; color: var(--text); background: none; border: 0;
+    padding: 0; cursor: pointer; display: inline-flex; gap: 4px; align-items: center;
+  }
+  th button::after { content: "↕"; color: var(--muted); font-size: .8em; }
+  th[aria-sort="ascending"] button::after { content: "↑"; color: var(--accent); }
+  th[aria-sort="descending"] button::after { content: "↓"; color: var(--accent); }
+  td.seq { font-family: var(--mono); word-break: break-all; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bar { display: inline-block; width: 60px; height: 6px; border-radius: 99px; background: var(--surface-2); margin-left: 8px; vertical-align: middle; overflow: hidden; }
+  .bar span { display: block; height: 100%; }
+  .tag { display: inline-block; font-size: .8rem; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .tag.good { background: var(--good-soft); color: var(--good); }
+  .tag.bad { background: var(--bad-soft); color: var(--bad); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); white-space: normal; }
+
+  footer { margin-top: 32px; color: var(--muted); font-size: .85rem; }
+  footer p { margin: 6px 0; }
+  footer a { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    main { padding-top: 20px; }
+    header h1 { font-size: 1.45rem; }
+    .panel { padding: 16px; }
+    .tab { flex: 1; padding: 8px 6px; font-size: .9rem; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    table { font-size: .82rem; }
+    th, td { padding: 8px 6px; }
+    .bar { display: none; }
+    .tag { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Peptide Detectability Predictor</h1>
+    <p>Predicts whether a tryptic peptide is likely to be <strong>detected</strong> (a proteotypic “flyer”)
+      in a bottom-up mass-spectrometry experiment, or likely <strong>overlooked</strong>.
+      Trained on GPMDB observation data. For research use only.</p>
+    <div class="model" id="model" aria-live="polite">
+      <span class="chip">Loading model…</span>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="tabs" role="tablist" aria-label="Input mode">
+      <button class="tab" role="tab" id="tab-single" aria-controls="panel-single" aria-selected="true">Single peptide</button>
+      <button class="tab" role="tab" id="tab-batch" aria-controls="panel-batch" aria-selected="false" tabindex="-1">Batch (paste)</button>
+      <button class="tab" role="tab" id="tab-csv" aria-controls="panel-csv" aria-selected="false" tabindex="-1">CSV upload</button>
+    </div>
+
+    <div class="panel" role="tabpanel" id="panel-single" aria-labelledby="tab-single">
+      <form id="form-single">
+        <label for="seq">Peptide sequence</label>
+        <input type="text" id="seq" autocomplete="off" spellcheck="false" placeholder="e.g. TITLEVEPSDTIENVK">
+        <p class="hint" data-rules></p>
+        <div class="row">
+          <button class="btn" type="submit">Predict</button>
+          <div class="examples">Try:
+            <button type="button" data-example>TITLEVEPSDTIENVK</button>
+            <button type="button" data-example>HQGVMVGMGQK</button>
+            <button type="button" data-example>ESTLHLVLR</button>
+          </div>
+        </div>
+      </form>
+      <div class="result" id="single-result" hidden aria-live="polite"></div>
+    </div>
+
+    <div class="panel" role="tabpanel" id="panel-batch" aria-labelledby="tab-batch" hidden>
+      <form id="form-batch">
+        <label for="batch">One peptide per line</label>
+        <textarea id="batch" spellcheck="false" placeholder="TITLEVEPSDTIENVK&#10;HQGVMVGMGQK&#10;ESTLHLVLR"></textarea>
+        <p class="hint"><span id="batch-count">0</span> sequence(s) · <span data-limit></span></p>
+        <div class="row"><button class="btn" type="submit">Predict batch</button></div>
+      </form>
+    </div>
+
+    <div class="panel" role="tabpanel" id="panel-csv" aria-labelledby="tab-csv" hidden>
+      <form id="form-csv">
+        <label class="drop" id="drop" for="csv">
+          <input type="file" id="csv" accept=".csv,text/csv">
+          <div id="drop-text"><strong>Choose a CSV file</strong> or drag it here</div>
+          <p class="hint">Uses the column named <code>sequence</code>, otherwise the first column.
+            The first row is treated as a header. Max 4&nbsp;MB · <span data-limit></span></p>
+        </label>
+        <div class="row"><button class="btn" type="submit" disabled id="csv-btn">Predict from CSV</button></div>
+      </form>
+    </div>
+
+    <div class="error" id="error" role="alert" hidden></div>
+  </section>
+
+  <section class="card" id="results" hidden aria-labelledby="results-title">
+    <div class="head">
+      <h2 id="results-title">Results</h2>
+      <button class="btn secondary" id="download" type="button">Download CSV</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div id="n-total">0</div><small>sequences</small></div>
+      <div class="stat good"><div id="n-good">0</div><small>likely detectable</small></div>
+      <div class="stat bad"><div id="n-bad">0</div><small>likely overlooked</small></div>
+      <div class="stat warn"><div id="n-skip">0</div><small>not scored</small></div>
+    </div>
+    <p id="status" aria-live="polite"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="sequence" aria-sort="none"><button type="button">Sequence</button></th>
+            <th data-key="length" aria-sort="none"><button type="button">Length</button></th>
+            <th data-key="probability" aria-sort="none"><button type="button">P(detectable)</button></th>
+            <th data-key="verdict" aria-sort="none"><button type="button">Verdict</button></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p id="threshold-note">Verdict threshold 0.5: P(detectable) ≥ 0.5 → likely detectable; below → likely overlooked.</p>
+    <p>Data: DeepMSPeptide / GPMDB (Serrano et al., <em>Bioinformatics</em> 2020; Craig et al., <em>J Proteome Res</em> 2004).
+      Predictions are a screening aid, not a guarantee of detection on any particular instrument.</p>
+    <p><a href="/api/docs">API documentation</a></p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  const MAX_FILE_BYTES = 4 * 1024 * 1024; // Vercel request bodies are capped at 4.5 MB
+  const info = { threshold: 0.5, max_sequences: 5000, min_length: 7, max_length: 50 };
+  const $ = (id) => document.getElementById(id);
+
+  let rows = [];
+  let sort = { key: null, dir: 1 };
+  let csvSequences = null;
+
+  // ------------------------------------------------------------------ helpers
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[c]);
+
+  const fmt = (n) => n.toLocaleString("en-US");
+
+  function showError(message) {
+    $("error").textContent = message;
+    $("error").hidden = !message;
+  }
+
+  function cleanLines(text) {
+    return text.split(/\r?\n/).map((s) => s.replace(/\s+/g, "")).filter(Boolean);
+  }
+
+  async function callPredict(sequences) {
+    if (sequences.length > info.max_sequences) {
+      throw new Error(`Too many sequences (${fmt(sequences.length)}). The limit is ${fmt(info.max_sequences)} per request.`);
+    }
+    let response;
+    try {
+      response = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sequences }),
+      });
+    } catch {
+      throw new Error("Could not reach the prediction service. Check your connection and try again.");
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = typeof data.detail === "string" ? data.detail : null;
+      throw new Error(detail || `Request failed (HTTP ${response.status}).`);
+    }
+    return data;
+  }
+
+  async function withBusy(button, label, fn) {
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = label;
+    showError("");
+    try {
+      await fn();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = original;
+    }
+  }
+
+  function probColor(p) {
+    return p >= info.threshold ? "var(--good)" : "var(--bad)";
+  }
+
+  // ------------------------------------------------------------------ model info
+  fetch("/api/model")
+    .then((r) => (r.ok ? r.json() : Promise.reject()))
+    .then((m) => {
+      Object.assign(info, m);
+      const metrics = m.test_metrics || {};
+      const chips = [`<span class="chip">Model <b>${escapeHtml(m.version || "?")}</b></span>`];
+      if (m.model_type) chips.push(`<span class="chip">Type <b>${escapeHtml(m.model_type)}</b></span>`);
+      if (metrics.pr_auc != null) chips.push(`<span class="chip">Test PR-AUC <b>${metrics.pr_auc.toFixed(3)}</b></span>`);
+      if (metrics.roc_auc != null) chips.push(`<span class="chip">ROC-AUC <b>${metrics.roc_auc.toFixed(3)}</b></span>`);
+      $("model").innerHTML = chips.join("");
+      applyRules();
+    })
+    .catch(() => {
+      $("model").innerHTML = '<span class="chip">Model info unavailable</span>';
+    });
+
+  function applyRules() {
+    document.querySelectorAll("[data-rules]").forEach((el) => {
+      el.textContent = `Unmodified peptides of ${info.min_length}–${info.max_length} residues over the 20 standard amino acids (${info.alphabet || "ACDEFGHIKLMNPQRSTVWY"}).`;
+    });
+    document.querySelectorAll("[data-limit]").forEach((el) => {
+      el.textContent = `up to ${fmt(info.max_sequences)} sequences`;
+    });
+    $("threshold-note").textContent =
+      `Verdict threshold ${info.threshold}: P(detectable) ≥ ${info.threshold} → likely detectable; below → likely overlooked.`;
+  }
+  applyRules();
+
+  // ------------------------------------------------------------------ tabs
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  function selectTab(tab) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+      $(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    showError("");
+  }
+  tabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => selectTab(tab));
+    tab.addEventListener("keydown", (e) => {
+      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      const next = tabs[(i + step + tabs.length) % tabs.length];
+      selectTab(next);
+      next.focus();
+    });
+  });
+
+  // ------------------------------------------------------------------ single
+  document.querySelectorAll("[data-example]").forEach((b) => {
+    b.addEventListener("click", () => {
+      $("seq").value = b.textContent;
+      $("form-single").requestSubmit();
+    });
+  });
+
+  $("form-single").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const seq = $("seq").value.replace(/\s+/g, "");
+    const box = $("single-result");
+    if (!seq) {
+      showError("Enter a peptide sequence.");
+      return;
+    }
+    withBusy(e.submitter || $("form-single").querySelector("button[type=submit]"), "Predicting…", async () => {
+      const data = await callPredict([seq]);
+      const r = data.results[0];
+      const shown = r.sequence.length > 60 ? r.sequence.slice(0, 60) + "…" : r.sequence;
+      if (r.probability == null) {
+        box.className = "result warn";
+        box.innerHTML = `<h2>Not scored</h2>
+          <p><span class="seq">${escapeHtml(shown)}</span>: ${escapeHtml(r.verdict.replace(/^not scored:\s*/, ""))}.</p>
+          <p class="hint">The model only covers unmodified peptides of ${info.min_length}–${info.max_length} residues over the 20 standard amino acids.</p>`;
+      } else {
+        const good = r.probability >= info.threshold;
+        const pct = (r.probability * 100).toFixed(1);
+        box.className = `result ${good ? "good" : "bad"}`;
+        box.innerHTML = `<h2>${good ? "Likely detectable" : "Likely overlooked"}</h2>
+          <p>P(detectable) = <strong>${r.probability.toFixed(3)}</strong> for
+            <span class="seq">${escapeHtml(shown)}</span> (length ${r.length})</p>
+          <div class="gauge" role="img" aria-label="Probability ${pct} percent">
+            <span style="width:${pct}%;background:${probColor(r.probability)}"></span>
+            <i style="left:${info.threshold * 100}%"></i>
+          </div>
+          <div class="scale"><span>0</span><span>threshold ${info.threshold}</span><span>1</span></div>`;
+      }
+      box.hidden = false;
+    });
+  });
+
+  // ------------------------------------------------------------------ batch
+  const updateCount = () => { $("batch-count").textContent = fmt(cleanLines($("batch").value).length); };
+  $("batch").addEventListener("input", updateCount);
+
+  $("form-batch").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const sequences = cleanLines($("batch").value);
+    if (!sequences.length) {
+      showError("Paste at least one peptide sequence.");
+      return;
+    }
+    withBusy(e.submitter || $("form-batch").querySelector("button"), "Predicting…", async () => {
+      showResults(await callPredict(sequences));
+    });
+  });
+
+  // ------------------------------------------------------------------ CSV
+  function parseCsv(text) {
+    const out = [];
+    let row = [], field = "", quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (quoted) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; } else { quoted = false; }
+        } else {
+          field += c;
+        }
+      } else if (c === '"') {
+        quoted = true;
+      } else if (c === ",") {
+        row.push(field); field = "";
+      } else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        row.push(field); out.push(row); row = []; field = "";
+      } else {
+        field += c;
+      }
+    }
+    if (field !== "" || row.length) { row.push(field); out.push(row); }
+    return out;
+  }
+
+  function sequencesFromCsv(text) {
+    const table = parseCsv(text.replace(/^﻿/, ""));
+    if (!table.length) return { sequences: [], column: null };
+    const header = table[0].map((h) => h.trim());
+    let col = header.findIndex((h) => h.toLowerCase() === "sequence");
+    if (col < 0) col = 0;
+    const sequences = table.slice(1)
+      .map((r) => (r[col] || "").replace(/\s+/g, ""))
+      .filter(Boolean);
+    return { sequences, column: header[col] || `column ${col + 1}` };
+  }
+
+  function loadFile(file) {
+    csvSequences = null;
+    $("csv-btn").disabled = true;
+    showError("");
+    if (!file) return;
+    if (file.size > MAX_FILE_BYTES) {
+      $("drop-text").innerHTML = `<strong>${escapeHtml(file.name)}</strong>`;
+      showError("The file is larger than 4 MB. Split it into smaller files.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const { sequences, column } = sequencesFromCsv(String(reader.result));
+      $("drop-text").innerHTML = `<strong>${escapeHtml(file.name)}</strong> · ${fmt(sequences.length)} sequence(s) from “${escapeHtml(column ?? "")}”`;
+      if (!sequences.length) {
+        showError("No sequences found in the file.");
+        return;
+      }
+      if (sequences.length > info.max_sequences) {
+        showError(`Too many sequences (${fmt(sequences.length)}). The limit is ${fmt(info.max_sequences)} per request.`);
+        return;
+      }
+      csvSequences = sequences;
+      $("csv-btn").disabled = false;
+    };
+    reader.onerror = () => showError("Could not read the file.");
+    reader.readAsText(file);
+  }
+
+  $("csv").addEventListener("change", (e) => loadFile(e.target.files[0]));
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => {
+    e.preventDefault(); drop.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => {
+    e.preventDefault(); drop.classList.remove("over");
+  }));
+  drop.addEventListener("drop", (e) => loadFile(e.dataTransfer.files[0]));
+
+  $("form-csv").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!csvSequences) return;
+    withBusy($("csv-btn"), "Predicting…", async () => {
+      showResults(await callPredict(csvSequences));
+    });
+  });
+
+  // ------------------------------------------------------------------ results table
+  function showResults(data) {
+    rows = data.results;
+    sort = { key: null, dir: 1 };
+    const scored = rows.filter((r) => r.probability != null);
+    const good = scored.filter((r) => r.probability >= info.threshold).length;
+    $("n-total").textContent = fmt(rows.length);
+    $("n-good").textContent = fmt(good);
+    $("n-bad").textContent = fmt(scored.length - good);
+    $("n-skip").textContent = fmt(rows.length - scored.length);
+    $("status").textContent = data.message;
+    renderRows();
+    $("results").hidden = false;
+    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderRows() {
+    document.querySelectorAll("th[data-key]").forEach((th) => {
+      th.setAttribute("aria-sort", th.dataset.key === sort.key ? (sort.dir > 0 ? "ascending" : "descending") : "none");
+    });
+    const view = sort.key ? [...rows].sort(compare) : rows;
+    $("rows").innerHTML = view.map((r) => {
+      let prob = "—", tag;
+      if (r.probability == null) {
+        tag = `<span class="tag warn">${escapeHtml(r.verdict)}</span>`;
+      } else {
+        const good = r.probability >= info.threshold;
+        prob = `${r.probability.toFixed(3)}<span class="bar"><span style="width:${(r.probability * 100).toFixed(1)}%;background:${probColor(r.probability)}"></span></span>`;
+        tag = `<span class="tag ${good ? "good" : "bad"}">${good ? "likely detectable" : "likely overlooked"}</span>`;
+      }
+      return `<tr><td class="seq">${escapeHtml(r.sequence)}</td><td class="num">${r.length}</td><td class="num">${prob}</td><td>${tag}</td></tr>`;
+    }).join("");
+  }
+
+  function compare(a, b) {
+    const k = sort.key;
+    const x = a[k], y = b[k];
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;   // unscored rows always last
+    if (y == null) return -1;
+    return (typeof x === "number" ? x - y : String(x).localeCompare(String(y))) * sort.dir;
+  }
+
+  document.querySelectorAll("th[data-key] button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.parentElement.dataset.key;
+      sort = { key, dir: sort.key === key ? -sort.dir : (key === "probability" ? -1 : 1) };
+      renderRows();
+    });
+  });
+
+  // ------------------------------------------------------------------ download
+  $("download").addEventListener("click", () => {
+    const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = ["sequence,length,probability,verdict"].concat(
+      rows.map((r) => [q(r.sequence), r.length, r.probability ?? "", q(r.verdict)].join(","))
+    );
+    const blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "peptide_predictions.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+})();
+</script>
+</body>
+</html>

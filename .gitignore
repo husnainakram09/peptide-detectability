@@ -8,4 +8,8 @@ embeddings_cache/
 *.npy
 .DS_Store
 .ipynb_checkpoints/
+.pytest_cache/
 # NOTE: models/ is intentionally NOT ignored — we commit small versioned models.
+# Local archives / working documents — not part of the published project.
+*.zip
+docs/

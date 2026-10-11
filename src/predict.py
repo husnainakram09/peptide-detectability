@@ -47,15 +47,22 @@ def _load_baseline(vdir: Path):
 
     from src import features
 
+    import pandas as pd
+
     model = joblib.load(vdir / "model.pkl")
     scaler = joblib.load(vdir / "scaler.pkl")
+    # LightGBM records column names at fit time (``Column_0`` .. for arrays);
+    # passing them back avoids sklearn's "X does not have valid feature names".
+    columns = getattr(model, "feature_names_in_", None)
 
     def predict(sequences) -> np.ndarray:
         seqs = list(sequences)
         if not seqs:
             return np.zeros(0, dtype=float)
-        x = features.featurize_many(seqs)
-        return model.predict_proba(scaler.transform(x))[:, 1].astype(float)
+        x = scaler.transform(features.featurize_many(seqs))
+        if columns is not None:
+            x = pd.DataFrame(x, columns=columns)
+        return model.predict_proba(x)[:, 1].astype(float)
 
     return predict
 

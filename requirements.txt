@@ -1,14 +1,13 @@
-numpy
-pandas
-scikit-learn==1.9.0
-lightgbm==4.6.0
-torch
-transformers
-tokenizers
-biopython
-matplotlib
-seaborn
-gradio==6.25.0
-tqdm
-joblib
-pytest
+# Runtime dependencies shared by both deployments:
+#   - Vercel (index.py, FastAPI) installs exactly this file.
+#   - Hugging Face Spaces (app.py) installs this file plus Gradio, whose
+#     version comes from `sdk_version` in README.md.
+# To run the Gradio app locally:  pip install -r requirements.txt gradio==6.25.0
+# Training, benchmarking and tests:  pip install -r requirements-train.txt
+fastapi>=0.139,<1.0   # 0.139+ provides app.frontend(); <1.0 matches Gradio's pin
+numpy>=2,<3
+pandas>=2.2
+scikit-learn==1.9.0   # must match the version that pickled models/*/scaler.pkl
+lightgbm==4.6.0       # must match the version that pickled models/*/model.pkl
+biopython>=1.81
+joblib>=1.3

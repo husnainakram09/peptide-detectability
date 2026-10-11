@@ -1,0 +1,11 @@
+# Allowlist: Vercel only receives what the FastAPI deployment needs.
+# (app.py is the Gradio app for Hugging Face Spaces and must NOT be picked up
+# as the Vercel entrypoint.)
+/*
+!index.py
+!src
+!models
+!web
+!requirements.txt
+!.python-version
+!vercel.json
