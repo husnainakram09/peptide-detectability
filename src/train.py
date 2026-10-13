@@ -273,6 +273,9 @@ def run_cnn(seed: int) -> None:
     data_hash = versioning.data_hash_of(config.TRAIN_CSV, config.VAL_CSV, config.TEST_CSV)
     vdir = versioning.new_version_dir("cnn")
     torch.save(model.state_dict(), vdir / "model.pt")
+    # NumPy copy of the weights so the deployed apps can serve without PyTorch.
+    from src.models import cnn_numpy
+    cnn_numpy.export_weights(model.state_dict(), vdir / "model.npz")
 
     encoder_config = {
         "vocab": config.AMINO_ACIDS,
@@ -297,7 +300,8 @@ def run_cnn(seed: int) -> None:
         "best_val_pr_auc": best_pr,
         "primary_metric": config.PRIMARY_METRIC,
         "data_hash": data_hash,
-        "artifacts": {"model": "model.pt", "encoder_config": "encoder_config.json"},
+        "artifacts": {"model": "model.pt", "numpy_model": "model.npz",
+                      "encoder_config": "encoder_config.json"},
     }
     versioning.register(vdir, "cnn", metrics, cfg, data_hash)
     champ = versioning.update_champion(metric=config.PRIMARY_METRIC)

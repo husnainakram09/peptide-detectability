@@ -57,11 +57,17 @@ in full by the command above.
 
 ### The training set is a `.rar`
 
-`GPMDB_test_peptides.txt` is plain text and already contains both classes in
-near-equal proportion, so the pipeline runs on it directly. To *also* include
-`GPMDB_training_peptides.rar`, install a RAR extractor — one of `unrar`, `unar`,
-`libarchive-tools` (`bsdtar`), or `p7zip` (optionally `pip install rarfile`) —
-and rerun. `src/data_prep.py` picks up the extracted table automatically.
+`GPMDB_training_peptides.rar` holds 75k of the ~100k peptides, so always
+include it — the current models are trained on both files (98,404 peptides
+after cleaning). `src/data_prep.py` extracts it automatically with the first
+tool it finds: `unrar`, `unar`, `bsdtar` (`libarchive-tools`), `7z`, or — on
+Windows 10+ — the built-in `tar.exe`. On Linux without one of these, install
+`libarchive-tools` or `unar`, or extract it manually into `data/raw/`
+(e.g. `tar -xf GPMDB_training_peptides.rar -C data/raw` on Windows).
+
+Without the `.rar`, the pipeline still runs on `GPMDB_test_peptides.txt` alone
+(25k peptides, both classes), but the splits — and therefore the results —
+will differ from the published ones.
 
 ### Offline / blocked network
 

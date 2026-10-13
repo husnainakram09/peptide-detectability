@@ -1,0 +1,32 @@
+{
+  "model_type": "cnn",
+  "seed": 42,
+  "framework": "pytorch (CPU)",
+  "hyperparameters": {
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "batch_size": 64,
+    "max_epochs": 30,
+    "patience": 5,
+    "best_epoch": 6,
+    "loss": "BCEWithLogitsLoss",
+    "pos_weight": 0.9805629834095287
+  },
+  "model_arch": {
+    "embed_dim": 32,
+    "num_channels": 64,
+    "kernel_sizes": [
+      3,
+      5
+    ],
+    "dense_dim": 64,
+    "dropout": 0.3
+  },
+  "best_val_pr_auc": 0.8123752308030125,
+  "primary_metric": "pr_auc",
+  "data_hash": "01ae4720ceaf",
+  "artifacts": {
+    "model": "model.pt",
+    "encoder_config": "encoder_config.json"
+  }
+}

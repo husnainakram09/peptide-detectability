@@ -31,6 +31,23 @@ def list_versions() -> "list[dict]":
     return versioning.list_versions()
 
 
+def is_servable(entry: dict) -> bool:
+    """True if this environment has the packages ``load_model`` needs for the
+    registry ``entry`` (deployments install only requirements.txt — no torch)."""
+    from importlib.util import find_spec
+
+    has = lambda name: find_spec(name) is not None  # noqa: E731
+    model_type = entry.get("model_type")
+    if model_type == "baseline":
+        return True
+    if model_type == "cnn":
+        npz = config.MODELS_DIR / entry["version"] / "model.npz"
+        return npz.exists() or has("torch")
+    if model_type == "esm2":
+        return has("torch") and has("transformers")
+    return False
+
+
 def champion_version() -> "str | None":
     """The champion version name from ``models/LATEST.json`` (or None)."""
     try:
@@ -68,14 +85,30 @@ def _load_baseline(vdir: Path):
 
 
 def _load_cnn(vdir: Path):
-    import torch
-
     from src import encoders
-    from src.models import cnn as cnn_model
 
     enc_cfg = json.loads((vdir / "encoder_config.json").read_text())
     arch = dict(enc_cfg["model"])
     max_len = int(enc_cfg["max_len"])
+
+    # Prefer the NumPy export: identical outputs, and no PyTorch at serve time.
+    if (vdir / "model.npz").exists():
+        from src.models.cnn_numpy import NumpyPeptideCNN
+
+        np_model = NumpyPeptideCNN.load(vdir / "model.npz", arch["kernel_sizes"])
+
+        def predict(sequences) -> np.ndarray:
+            seqs = list(sequences)
+            if not seqs:
+                return np.zeros(0, dtype=float)
+            return np_model.predict_proba(encoders.encode_sequences(seqs, max_len=max_len))
+
+        return predict
+
+    import torch
+
+    from src.models import cnn as cnn_model
+
     model = cnn_model.PeptideCNN(
         vocab_size=enc_cfg["vocab_size"], pad_idx=enc_cfg["pad_idx"], **arch
     )

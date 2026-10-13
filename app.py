@@ -48,9 +48,17 @@ _CACHE: dict = {}
 # --------------------------------------------------------------------------- #
 
 def _entries() -> dict:
-    """Return model registry entries indexed by version."""
+    """Return servable model registry entries indexed by version.
+
+    Versions whose dependencies are not installed here (e.g. ESM-2 without
+    torch/transformers on the Space) are hidden rather than failing on use.
+    """
     try:
-        return {entry["version"]: entry for entry in predictor.list_versions()}
+        return {
+            entry["version"]: entry
+            for entry in predictor.list_versions()
+            if predictor.is_servable(entry)
+        }
     except Exception:
         return {}
 

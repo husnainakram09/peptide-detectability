@@ -1,0 +1,23 @@
+sequence,true_label,expected_verdict,note
+EISPDTTLLDLQNNDISELRK,detectable,likely detectable,confident correct (P~0.91)
+IDNEALYDICFR,detectable,likely detectable,confident correct (P~0.90)
+VVAVGYINEAIDEGNPLR,detectable,likely detectable,confident correct (P~0.92)
+GSFTYFAPSNEAWDNLDSDIRR,detectable,likely detectable,confident correct (P~0.91)
+LLAFRQIHK,not detectable,likely OVERLOOKED,confident correct (P~0.01)
+QEFRKFDLNSPWEAFPV,not detectable,likely OVERLOOKED,confident correct (P~0.00)
+ATDELATKL,not detectable,likely OVERLOOKED,confident correct (P~0.01)
+EDVDFLPYMSWQGEPQEAV,not detectable,likely OVERLOOKED,confident correct (P~0.01)
+SLNLSTEFISSTK,detectable,likely OVERLOOKED,borderline - model wrong (P~0.47)
+EFALLVQR,not detectable,likely detectable,borderline - model wrong (P~0.53)
+SDTSLTWNSVK,detectable,likely OVERLOOKED,borderline - model wrong (P~0.48)
+YIHIFLNEVVALVPVLNETK,not detectable,likely detectable,known model error (P~0.87)
+DYGYGITCIYK,not detectable,likely detectable,known model error (P~0.80)
+FDDPGLMLMGFKPL,detectable,likely OVERLOOKED,known model error (P~0.04)
+VGAGAPVYLAAVLEYLTAEI,detectable,likely OVERLOOKED,known model error (P~0.04)
+  titlevepsdtienvk ,,likely detectable,lowercase + spaces are cleaned (P~0.92)
+PEPTIDEXK,,not scored,non-standard residue X
+PEPM(ox)TIDEK,,not scored,modification notation
+C[+57]PEPTIDEK,,not scored,mass-shift notation
+PEPTIK,,not scored,too short (6 < 7)
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,,not scored,too long (51 > 50)
+,,skipped,blank row is ignored

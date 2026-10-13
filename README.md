@@ -46,24 +46,37 @@ OVERLOOKED*.
 
 ## Model
 
-LightGBM gradient-boosted trees on 27 hand-crafted features: length, the 20
-amino-acid fractions, and six Biopython ProtParam descriptors (molecular
-weight, GRAVY, aromaticity, instability index, isoelectric point, net charge
-at pH 7).
+The default model is a **1D convolutional neural network** (`v003_cnn`) that
+reads the amino-acid sequence directly: a learned residue embedding, two
+parallel convolutions (window 3 and 5 residues), global max-pooling and two
+dense layers — about 25k parameters. It is served with a NumPy
+re-implementation of the forward pass (`src/models/cnn_numpy.py`, verified
+against PyTorch), so the deployments do not need PyTorch.
 
-Held-out test set (n = 3,692, 50.5% positive):
+All three models below were trained on the same 70/15/15 split of 98,404
+peptides and scored on the same held-out test set (n = 14,761, 50.5% positive):
 
-| PR-AUC | ROC-AUC | Accuracy | Precision | Recall | F1 |
-|---:|---:|---:|---:|---:|---:|
-| 0.703 | 0.741 | 0.689 | 0.660 | 0.790 | 0.719 |
+| Model | Accuracy | Precision | Recall | Specificity | ROC-AUC | PR-AUC |
+|---|---:|---:|---:|---:|---:|---:|
+| **1D-CNN** (`v003`, default) | **0.785** | **0.758** | **0.845** | **0.724** | **0.850** | **0.806** |
+| ESM-2 8M embeddings + MLP (`v004`) | 0.761 | 0.733 | 0.830 | 0.691 | 0.828 | 0.793 |
+| LightGBM on 27 composition / physicochemical features (`v002`) | 0.695 | 0.663 | 0.803 | 0.584 | 0.751 | 0.711 |
+
+The sequence-aware models clearly beat the composition-only baseline, so
+residue *order* carries information that amino-acid counts alone miss. ESM-2 needs PyTorch and transformers, so it is only
+offered when those are installed; the hosted apps show the baseline and CNN
+models. `v001` is the original baseline trained on the smaller 25k-peptide
+dataset and is kept for reference.
 
 Full report with ROC / PR curves: [`reports/benchmark.md`](reports/benchmark.md).
 
 ### Limitations
 
-- **Training data.** 24,612 unique peptides (17,228 for training) from the
-  DeepMSPeptide GPMDB table `GPMDB_test_peptides.txt`. The larger
-  `GPMDB_training_peptides.rar` set was not used for this version.
+- **Training data.** 98,404 unique peptides (68,882 for training) from both
+  DeepMSPeptide GPMDB tables.
+- **Accuracy.** About 1 in 5 predictions is wrong. The model leans towards
+  "detectable": it finds 85% of detectable peptides but also labels 28% of
+  non-detectable ones as detectable. Scores near 0.5 are low-confidence.
 - **Labels** come from GPMDB observation frequency (MObs → detectable,
   LObs → not detectable). They reflect what was historically observed across
   many public experiments, not detectability on a specific instrument,

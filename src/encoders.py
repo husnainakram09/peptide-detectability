@@ -16,9 +16,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import torch
 
 from src import config
+
+# torch is imported inside the functions that need it, so integer encoding
+# (used for NumPy CNN inference) works without PyTorch installed.
 
 PAD_IDX = config.PAD_IDX        # 0
 MAX_LEN = config.MAX_LEN        # 50
@@ -59,6 +61,8 @@ def encode_dataframe(df: pd.DataFrame, seq_col: str = "sequence",
     and ``y`` is a ``FloatTensor`` of shape ``(n,)`` when ``label_col`` is present
     (otherwise ``y`` is ``None``).
     """
+    import torch
+
     x = torch.from_numpy(encode_sequences(df[seq_col].tolist(), max_len=max_len)).long()
     y = None
     if label_col in df.columns:
@@ -103,6 +107,7 @@ def extract_esm_embeddings(sequences, model_id: str = DEFAULT_ESM_MODEL,
     tokens only (CLS/EOS special tokens and padding are excluded via the
     attention and special-tokens masks). Uses GPU if available, else CPU.
     """
+    import torch
     from transformers import AutoModel, AutoTokenizer
 
     if device is None:

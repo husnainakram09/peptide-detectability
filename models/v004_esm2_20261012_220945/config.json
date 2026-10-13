@@ -1,0 +1,28 @@
+{
+  "model_type": "esm2",
+  "seed": 42,
+  "framework": "pytorch (CPU); embeddings via HuggingFace transformers",
+  "esm_model_id": "facebook/esm2_t6_8M_UR50D",
+  "esm_model_tag": "esm2_t6_8M_UR50D",
+  "emb_dim": 320,
+  "head": {
+    "hidden_dim": 128,
+    "dropout": 0.3
+  },
+  "hyperparameters": {
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "batch_size": 64,
+    "max_epochs": 50,
+    "patience": 5,
+    "best_epoch": 32,
+    "loss": "BCEWithLogitsLoss",
+    "pos_weight": 0.9805629834095287
+  },
+  "best_val_pr_auc": 0.7939157231048526,
+  "primary_metric": "pr_auc",
+  "data_hash": "01ae4720ceaf",
+  "artifacts": {
+    "model": "mlp_head.pt"
+  }
+}

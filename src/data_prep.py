@@ -127,6 +127,9 @@ def _extract_rar(rar_path: Path, out_dir: Path) -> None:
         ("unar", ["unar", "-force-overwrite", "-o", str(out_dir), str(rar_path)]),
         ("bsdtar", ["bsdtar", "-x", "-f", str(rar_path), "-C", str(out_dir)]),
         ("7z", ["7z", "x", f"-o{out_dir}", "-y", str(rar_path)]),
+        # Windows 10+ ships libarchive's bsdtar as tar.exe, which reads RAR.
+        # (GNU tar on Linux cannot; it just fails and we fall through.)
+        ("tar", ["tar", "-xf", str(rar_path), "-C", str(out_dir)]),
     ]
     for tool, cmd in attempts:
         if shutil.which(tool):
