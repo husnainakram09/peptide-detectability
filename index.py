@@ -72,7 +72,9 @@ def _champion() -> "tuple[str, callable]":
         version = versions[-1]["version"] if versions else None
     if not version:
         raise RuntimeError("No trained model found in models/.")
-    for artifact in (config.MODELS_DIR / version).glob("*.pkl"):
+    for artifact in (config.MODELS_DIR / version).iterdir():
+        if artifact.suffix not in {".pkl", ".npz", ".pt"}:
+            continue
         with open(artifact, "rb") as fh:
             if fh.read(24).startswith(b"version https://git-lfs"):
                 raise RuntimeError(
@@ -112,7 +114,11 @@ def model_info() -> dict:
 
 @app.post("/api/predict", response_model=PredictResponse)
 def predict(request: PredictRequest) -> dict:
-    version, predict_fn = _champion()
+    try:
+        version, predict_fn = _champion()
+    except Exception as exc:
+        # Surface the cause (e.g. Git LFS pointers on Vercel) instead of a bare 500.
+        raise HTTPException(status_code=503, detail=f"Model unavailable: {exc}") from exc
     try:
         rows = validation.score_sequences(request.sequences, predict_fn)
     except validation.TooManySequences as exc:
